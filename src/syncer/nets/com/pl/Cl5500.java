@@ -212,12 +212,14 @@ public class Cl5500 {
 			 String header=bs.toString().substring(bs.toString().indexOf("L")+1);
 			 return Long.decode("0x"+header);		 
 		}catch( NumberFormatException ex ){
-			if ( bs.toString().substring(0,2).compareTo("^=")==0 )
+			//if ( bs.toString().substring(0,2).compareTo("^=")==0 )
+				bs.reset();
 				while ( (byt=(byte) socket.getInputStream().read()) != 10 ){
 					bs.write(byt);
 				}; // blad, odczytujemy stream do konca
-				System.out.println(bs.toString());
-			return -1;
+				//System.out.println("Błąd:"+bs.toString().substring(1));
+				return -Long.decode(bs.toString().substring(1));
+			//return -1;
 		}
 	}
 	
@@ -265,7 +267,7 @@ public class Cl5500 {
 			String txt="";
 			if ( item.skladInt>0 )
 			{
-				for ( int i=0; i++<2; )
+				for ( int i=0; i<2; i++ )
 					txt += wezSklad(item.skladInt,i);
 			}
 			item.setSkladTxt(txt);
@@ -283,7 +285,7 @@ public class Cl5500 {
 		String str=("R31F01," + String.format("%04x%02d\n", numer, wiersz) );
 		socket.getOutputStream().write( str.getBytes() );
 		int size=(int) readCasHeader();
-		if ( size<0 ) return null;
+		if ( size<0 ) return "";
 		byte[] buff=new byte[size];
 		socket.getInputStream().read(buff,0,size);
 		String ret=new String( buff,"ISO-8859-2");
@@ -338,11 +340,13 @@ public class Cl5500 {
 		return getRetValue();
 	}
 	
-	public boolean dodajTowar( Item i ) throws IOException
+	public boolean addPlu( Item i ) throws IOException
 	{
 		boolean ret=write(i.getAddString());
 		if ( i.jestSklad() ){
-			ret=write(i.getIngredientsString());
+			byte[] addTxt=i.getIngredientsString();
+			String txt=addTxt.toString();
+			ret=write(addTxt);
 		}
 		return ret;
 	}
