@@ -22,6 +22,18 @@ public class Item {
 	public Item() {
 	}
 	
+	public Item(String nazwa, int kodZwiazany, int plu, int cena, String sklad) {
+		this.nazwa=nazwa;
+		this.cena=cena/100.0;
+		this.plu=plu;
+		this.plu2=kodZwiazany;
+		if ( sklad.length()>0 )
+			{
+				this.skladInt=plu; this.skladTxt=sklad;
+			}
+		this.wagowy=true;
+	}
+	
 	public String toString(){
 		return getPlu() + "|" + plu2 +"|" + (wagowy?"wazony|":"niewazony|") + getName() + "|cena:" + String.format("%1.2f PLN", cena) + (skladInt>0?"|skład:" + skladTxt : "" );
 	}
