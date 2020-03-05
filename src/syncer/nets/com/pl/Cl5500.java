@@ -4,11 +4,16 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Enumeration;
+import java.util.List;
 
 public class Cl5500 {
 	String name="";
@@ -271,7 +276,7 @@ public class Cl5500 {
 					txt += wezSklad(item.skladInt,i);
 			}
 			item.setSkladTxt(txt);
-			ret=new String(b,"ISO-8859-2");
+			ret=new String(b,"Windows-1250");
 		}catch ( SocketTimeoutException | NegativeArraySizeException ex  ){
 			closeConnection();
 		}
@@ -320,7 +325,7 @@ public class Cl5500 {
 		}
 		byt=(byte) socket.getInputStream().read();
 		String s=bs.toString();
-		System.out.println(s);
+		//System.out.println(s);
 		if ( s.contains(":E") ){
 			System.out.println("Błąd:"+s);
 			return false;
@@ -356,6 +361,8 @@ public class Cl5500 {
 	public boolean dodajSklad(){
 		return true;
 	}
+	
+	
 	
 	//R13F01000001,0
 	//W02A00001,01L027F:^=01.*=01.$=0.&=010203F2.@=4F50.?=3.N=03A8.F=01.57,02:F=02.4C,04:F=04.4D,01:F=0A.53,15:BURACZKI ZASMA?ANE KPF=1E.53,00:F=1F.53,00:F=09.57,02:F=31.53,00:F=51.57,02:F=37.57,02:F=64.4C,04:F=03.53,00:F=0B.4C,04:F=0E.57,02:F=0F.42,01:F=1A.42,01:F=06.4C,04:?F=5B.4C,04:F=08.42,01:F=0D.4C,04:F=18.57,02:F=17.57,02:F=56.57,02:F=24.42,01:F=14.57,02:F=12.57,02:F=13.42,01:F=10.4C,04:F=11.42,01:F=16.57,02:F=19.57,02:F=23.57,02:F=32.57,02:F=46.57,02:F=5A.42,01:F=47.57,02:F=45.4C,04:F=40.57,02:F=44.4C,04:F=3C.42,01:F=3D.57,02:F=41.4C,04:F=3E.57,02:F=42.4C,04:U
