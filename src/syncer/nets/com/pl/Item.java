@@ -27,6 +27,7 @@ public class Item {
 		this.cena=cena/100.0;
 		this.plu=plu;
 		this.plu2=kodZwiazany;
+		sklad=sklad.trim();
 		if ( sklad.length()>0 )
 			{
 				this.skladInt=plu; this.skladTxt=sklad;
@@ -35,7 +36,7 @@ public class Item {
 	}
 	
 	public String toString(){
-		return getPlu() + "|" + plu2 +"|" + (wagowy?"wazony|":"niewazony|") + getName() + "|cena:" + String.format("%1.2f PLN", cena) + (skladInt>0?"|skład:" + skladTxt : "" );
+		return getPlu() + "|" + plu2 +"|" + (wagowy?"wazony|":"niewazony|") + getName() + "|cena:" + String.format("%1.2f PLN", cena) + (skladInt>0?"|skład:\"" + skladTxt : "\"" );
 	}
 
 	public String getName() {
@@ -118,10 +119,13 @@ public class Item {
 				addNameBlock(bs1);
 				if ( jestSklad() )
 					addIngredientsBlock(bs1);
+				String bs1Txt=bs1.toString();
 				crc(bs1);
+				bs1Txt=bs1.toString();
 				pomocniczy="W02A" + String.format("%06x,01L%02x:", plu,bs1.size()-1);
 				bs.write(pomocniczy.getBytes());
 				bs.write(bs1.toByteArray());
+				bs1Txt=bs.toString();
 				bs1=null; // garbage it
 				
 			} catch (IOException e) {
@@ -138,14 +142,14 @@ public class Item {
 		for ( int i=0;i<b.length;i++ ){
 			ret^=b[i];
 		}	
-		bs.write(b);
+		bs.write(ret);
 		return ret;
 	}
 	
 	private void addNameBlock(ByteArrayOutputStream bs) throws IOException {
 		String pomocniczy= String.format("F=%02x.4C,%02x:",Cl5500.pola.nazwa.getValue(),nazwa.length());
-		bs.write( pomocniczy.getBytes("ISO-8859-2") );
-		bs.write( nazwa.getBytes("ISO-8859-2") );
+		bs.write( pomocniczy.getBytes("Windows-1250") );
+		bs.write( nazwa.getBytes("Windows-1250") );
 	}
 
 	private void addPriceBlock(ByteArrayOutputStream bs) throws IOException {
@@ -169,22 +173,27 @@ public class Item {
 	public byte[] getIngredientsString( ) throws IOException{
 		ByteArrayOutputStream bs1=new ByteArrayOutputStream(),bs=new ByteArrayOutputStream();
 		//String sklad=skladTxt.getBytes("ISO-8859-2");
+		//String bs1Str;
+		int len=skladTxt.length();
 		if ( skladTxt.length()<512 ){
 			String block0= String.format("X=0.D=%02x.%s", skladTxt.length(), skladTxt );
-			bs1.write(block0.getBytes("ISO-8859-2") );
+			bs1.write(block0.getBytes("Windows-1250") );
 		}else
 		{
-			String block0= String.format("X=00.D=%02x.%s", 512, skladTxt.substring( 0,512 ) );
-			bs1.write(block0.getBytes("ISO-8859-2") );
-			block0= String.format("X=01.D=%02x.%s", 512, skladTxt.substring( 0,512 ) );
-			bs1.write(block0.getBytes("ISO-8859-2") );
+			String block0= String.format("X=00.D=%02x.%s", 512, skladTxt.substring( 0,511 ) );
+			bs1.write(block0.getBytes("Windows-1250") );
+			block0= String.format("X=01.D=%02x.%s", 512, skladTxt.substring( 512 ) );
+			bs1.write(block0.getBytes("Windows-1250") );
 		}
+		//bs1Str=bs1.toString();
 		crc(bs1);
+		//bs1Str=bs1.toString();
 		
 		String naglowek= String.format("W30F01,%dL%02x:",plu,bs1.size()-1 ); // przypisujemy do id skladu numer plu towaru...
 		bs.write(naglowek.getBytes());
+		//bs1Str=bs1.toString();
 		bs.write(bs1.toByteArray());
-		//System.out.println(bs1.toString());
+		//System.out.println(bs.toString());
 		return bs.toByteArray() ;
 	}
 	

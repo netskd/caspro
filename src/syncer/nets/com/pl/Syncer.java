@@ -10,27 +10,35 @@ public class Syncer {
 		
 		try{
 			Item item;
-			String txt=waga.wezSklad(82, 0);
+			//String txt=waga.wezSklad(82, 0);
 			/**/
-			for ( int i=1;i<1;i++){
+			for ( int i=1;i<11;i++){
 				//System.out.println(i);
 				
 				item=waga.getPlu(i);
 				
 				if ( item!=null ) {
 					//System.out.println(item);
-					/**/
-					waga1.addPlu(item);
+					
+					//waga1.addPlu(item);
 					//waga1.deletePlu(i);
 					  
-					 /**/
+					
 					System.out.println(item);
 				}
 		
 				//waga1.deletePlu(i);
 			}
 		/**/
-		}catch( IOException e ){
+			/**/
+			String txt=waga.wezSklad(82, 0);
+			for ( Item i :mag.getItems() ) {
+				System.out.println(i);
+				//i.setSkladTxt("Skład jakiś sobie wymyślimy\n\rMoże nawet trzeba będzie coś wpisać\n\rjajko...       ");
+				waga1.addPlu(i);
+			}
+			/**/
+		}catch( Exception e ){
 			e.printStackTrace();
 		}
 	}

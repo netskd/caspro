@@ -315,10 +315,12 @@ public class Cl5500 {
 	public boolean getRetValue() throws IOException{
 		byte byt;
 		ByteArrayOutputStream bs=new ByteArrayOutputStream();
-		while ( socket.getInputStream().available()>0  && ( byt=(byte) socket.getInputStream().read())!=10 ){
+		while ( /* socket.getInputStream().available()>0  && */ ( byt=(byte) socket.getInputStream().read())!=10 ){
 			bs.write(byt);
 		}
+		byt=(byte) socket.getInputStream().read();
 		String s=bs.toString();
+		System.out.println(s);
 		if ( s.contains(":E") ){
 			System.out.println("Błąd:"+s);
 			return false;
@@ -327,12 +329,12 @@ public class Cl5500 {
 	}
 	
 	
-	public boolean write( byte[] b) throws IOException{
+	public boolean write( byte[] b) throws IOException, InterruptedException{
 		if ( !isConnected ){
 			openConnection();
 		};
 		socket.getOutputStream().write(b);
-		
+		//Thread.sleep(10);
 		
 		//System.out.println(bs.toString());
 		//int size=(int) readCasHeader();
@@ -340,7 +342,7 @@ public class Cl5500 {
 		return getRetValue();
 	}
 	
-	public boolean addPlu( Item i ) throws IOException
+	public boolean addPlu( Item i ) throws IOException, InterruptedException
 	{
 		boolean ret=write(i.getAddString());
 		if ( i.jestSklad() ){
