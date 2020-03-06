@@ -13,24 +13,60 @@ import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.List;
 
+import static javax.crypto.Cipher.DECRYPT_MODE;
+import static javax.crypto.Cipher.ENCRYPT_MODE;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.KeyGenerator;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.SecretKeySpec;
+import javax.swing.BoxLayout;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
+import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
+import javax.swing.ListModel;
+import javax.swing.MutableComboBoxModel;
 import javax.swing.SpringLayout;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 public class konfiguracja extends JFrame {
 
@@ -40,7 +76,10 @@ public class konfiguracja extends JFrame {
 	
 	private JTextField serwer, login;
 	private JPasswordField password;
-	private JComboBox db;
+	private JComboBox<Object> db;
+	private List<?> listaWag;
+	JList<String> wagi=new JList<String>();
+	DefaultListModel<String> wagiLista=new DefaultListModel<String>();
 	
 	private JTabbedPane tabbedPane;
 	
@@ -67,6 +106,7 @@ public class konfiguracja extends JFrame {
 		panelDolny.setLayout(new FlowLayout( FlowLayout.RIGHT ) );
 		
 		JButton ok=new JButton("Ok");
+		ok.addActionListener( e -> { if (saveXML()) this.dispose(); } );
 		JButton cancel=new JButton("Anuluj");
 		cancel.addActionListener(e -> { this.dispose(); });
 		panelDolny.add(ok);panelDolny.add(cancel);
@@ -79,7 +119,7 @@ public class konfiguracja extends JFrame {
 		                  "Zmiana ustawień dostępu do bazy wf-mag");
 		tabbedPane.setMnemonicAt(0, KeyEvent.VK_1);
 
-		JComponent panel2 = (JComponent) makeTextPanel("Lista wag2");
+		JComponent panel2 = getScalesPanel();
 		tabbedPane.addTab("Lista wag", null, panel2,
 		                  "Dodaj/usuń obsługiwane wagi");
 		tabbedPane.setMnemonicAt(1, KeyEvent.VK_2);
@@ -154,6 +194,7 @@ public class konfiguracja extends JFrame {
 	}
 	
 	
+	
 	private JPanel getMagPanel(){
 		JPanel p=new JPanel();
 		p.setLayout( new GridBagLayout());
@@ -206,41 +247,236 @@ public class konfiguracja extends JFrame {
         
         constraints.gridx = 1;
         constraints.gridy = 3;     
-        db=new JComboBox();
+        db=new JComboBox<Object>();
         addDbListener(db);
         p.add(db, constraints);
         
 		return p;
 	}
 	
-	private void addDbListener(JComboBox db) {
+	private JPanel getScalesPanel(){
+		JPanel p=new JPanel();
+		p.setLayout(new BorderLayout());
+		JPanel lewy=new JPanel(), prawy=new JPanel();
+		JList<String> wagi=new JList<String>(wagiLista);
+		lewy.setLayout(new BorderLayout());
+		
+		p.add( lewy, BorderLayout.CENTER);
+		p.add( prawy, BorderLayout.EAST);
+		
+		JButton dodaj=new JButton("+");
+		dodaj.addActionListener( e -> { List l=pokazWyborDodaniaWag(); dodajWagi(l); } );
+		
+		JButton usun=new JButton("-");
+		prawy.setLayout(new GridLayout(2,1));
+		prawy.add(dodaj);prawy.add(usun);
+		
+		wagi.setLayoutOrientation(JList.VERTICAL);
+		JScrollPane listScroller = new JScrollPane(wagi);
+		lewy.add(listScroller,BorderLayout.CENTER);
+		//model.addElement("test");model.addElement("test1");model.addElement("test2");model.addElement("test3");
+		//wagi.setModel(model);
+		return p;
+	}
+	
+	private void dodajWagi(List l) {
+		for( Object waga: l )
+		{
+			if ( !wagiLista.contains((String)waga) ) wagiLista.addElement((String) waga); 
+		}
+	}
+
+	private List pokazWyborDodaniaWag() {
+		List l=new ArrayList();
+		String[] buttons = { "Automat", "Ręcznie", "Anuluj" };    
+		int returnValue = JOptionPane.showOptionDialog(null, "Dodawanie wag\n\nWybierz w jaki sposób dodać wagi.\nJeśli wybierzesz \"Automat\", zostaną dodane wszystkie \nwykryte wagi dostępne w sieci lokalnej...\nJeśli wybierzesz \"Ręcznie\" Będziesz mógł podać adres IP wagi\n\n", "Dodaj",
+		        JOptionPane.INFORMATION_MESSAGE, 0, null, buttons, buttons[0]);
+		switch( returnValue ){
+		case 2: // anuluj
+			break;
+		case 1: // ręcznie
+			 	String m = JOptionPane.showInputDialog(this, "Podaj adres ip wagi","Ręcznie dodaj wagę", JOptionPane.QUESTION_MESSAGE);
+			 	if ( m!=null && m.length()>0 ) l.add(m.trim());
+			break;
+		case 0: //automatycznie
+			IpChecker wagi=new IpChecker( "10.0.10.100",new IpCheckerInterface(){
+
+				@Override
+				public boolean check(String ip) {
+					Cl5500 waga=new Cl5500(ip);
+					try {
+						waga.getDate();
+						return true;
+					} catch (IOException e) {
+						return false;
+					}
+				};			
+			});
+			for ( String waga: wagi.ips )
+				l.add(waga);
+			break;
+		}
+		return l;
+	}
+
+	private void addDbListener(JComboBox<Object> db) {
 		db.addPopupMenuListener( new PopupMenuListener(){
 
 			@Override
 			public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
-				wapro
-				
+				Wapro mag=new Wapro( serwer.getText(),login.getText(), new String(password.getPassword()) );
+				List <String> lista=mag.getDatabasesList();
+				DefaultComboBoxModel<Object> model = new DefaultComboBoxModel<Object>( lista.toArray() );
+				db.setModel( model );
 			}
 
 			@Override
 			public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
-				// TODO Auto-generated method stub
-				
+			
 			}
 
 			@Override
 			public void popupMenuCanceled(PopupMenuEvent e) {
-				// TODO Auto-generated method stub
-				
+			
 			}
 			
 		});
 	}
 
 	public konfiguracja(){
+		listaWag=new ArrayList<Object>();
 		tworzPodklad();
+		readXML();
 		pack();
 		//setResizable(false);
 	}
 
+	public boolean readXML(){
+		File fXmlFile = new File("./syncer.xml");
+		try{
+			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+			Document doc = dBuilder.parse(fXmlFile);
+					
+			//optional, but recommended
+			//read this - http://stackoverflow.com/questions/13786607/normalization-in-dom-parsing-with-java-how-does-it-work
+			doc.getDocumentElement().normalize();
+			NodeList nList = doc.getElementsByTagName("wf-mag");
+			Node nNode = nList.item(0);
+			Element eElement = (Element) nNode;
+			String kombo=decrypt(eElement.getElementsByTagName("serwer").item(0).getTextContent(),"jajcarze");
+			int pierwszyN=kombo.indexOf('\n');
+			int drugiN=kombo.indexOf('\n',pierwszyN+1);
+			String server=kombo.substring(0,pierwszyN);serwer.setText(server.trim());
+			String user=kombo.substring(pierwszyN,drugiN);login.setText(user.trim());
+			String haslo=kombo.substring(drugiN);password.setText(haslo.trim());
+			String baza=eElement.getElementsByTagName("baza").item(0).getTextContent();
+			List<String> combo=new ArrayList<String>();
+			combo.add(baza);
+			DefaultComboBoxModel<Object> model = new DefaultComboBoxModel<Object>( combo.toArray() );
+			db.setModel( model );db.setSelectedIndex(0);
+			NodeList listaWag=doc.getElementsByTagName("wagi");
+			System.out.println(listaWag.getLength());
+			wagiLista.clear();
+			NodeList n=((Element)listaWag.item(0)).getElementsByTagName("ip");
+			System.out.println(n.getLength());
+			for ( int i=0 ; i<n.getLength(); i++ )
+			{
+				//String test=listaWag.item(i).getTextContent();
+				wagiLista.addElement(n.item(i).getTextContent());
+			}
+			
+			//System.out.println(decrypt(kombo,"jajcarze"));
+		}catch( Exception ex )
+		{
+			ex.printStackTrace();
+			return false;
+		}
+		return true;
+	}
+	public boolean saveXML(){
+    	try{
+    		 Wapro mag=new Wapro( serwer.getText().trim(),login.getText().trim(), new String(password.getPassword()) );
+    		 if (!mag.connected()){
+    			 mag=null;
+    			 JOptionPane.showMessageDialog(null, "Nie można połączyć z wapro", "Uwaga: " , JOptionPane.INFORMATION_MESSAGE);
+    			 return false;
+    		 }
+	    	 DocumentBuilderFactory documentFactory = DocumentBuilderFactory.newInstance();
+	         DocumentBuilder documentBuilder = documentFactory.newDocumentBuilder();
+	         Document document = documentBuilder.newDocument();
+	
+	         // root element
+	         Element root = document.createElement("konfiguracja");
+	         document.appendChild(root);
+	         Element wapro = document.createElement("wf-mag");
+	         root.appendChild(wapro);
+	         Element server = document.createElement("serwer");
+	         String kombo=serwer.getText()+"\n"+login.getText()+"\n"+new String(password.getPassword());
+	         server.appendChild(document.createTextNode(encrypt(kombo,"jajcarze")));
+	         wapro.appendChild(server);
+	         Element baza = document.createElement("baza");baza.appendChild(document.createTextNode(db.getSelectedItem().toString()));
+	         wapro.appendChild(baza);
+	         Element wagiElements = document.createElement("wagi");
+	         wapro.appendChild(wagiElements);
+	         
+	         // zapisujemy liste wag
+	         
+	         
+	         for ( int i=0; i<wagiLista.getSize(); i++ ) {
+	             Element ipWagi = document.createElement("ip");
+	             ipWagi.appendChild(document.createTextNode(String.valueOf( wagiLista.getElementAt(i))));
+	             wagiElements.appendChild(ipWagi);
+	         }
+	         
+	         
+	         TransformerFactory transformerFactory = TransformerFactory.newInstance();
+	         Transformer transformer = transformerFactory.newTransformer();
+	         DOMSource domSource = new DOMSource(document);
+	         StreamResult streamResult = new StreamResult(new File("./syncer.xml"));
+	         transformer.transform(domSource, streamResult);
+	         System.out.println("Done creating XML File");
+    	}
+    	catch( Exception ex ){
+    		ex.printStackTrace();
+    		
+    		return false;
+    	}
+    	return true;
+    }
+	
+	public static String encrypt(String text, String pass) {
+        try {
+            MessageDigest messageDigest = MessageDigest.getInstance("MD5");
+            Key key = new SecretKeySpec(messageDigest.digest(pass.getBytes("UTF-8")), "AES");
+            Cipher cipher = Cipher.getInstance("AES");
+            cipher.init(ENCRYPT_MODE, key);
+
+            byte[] encrypted = cipher.doFinal(text.getBytes("UTF-8"));
+            byte[] encoded = Base64.getEncoder().encode(encrypted);
+            return new String(encoded, "UTF-8");
+
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | UnsupportedEncodingException e) {
+            throw new RuntimeException("Cannot encrypt", e);
+        }
+    }
+
+    public static String decrypt(String text, String pass) {
+        try {
+            MessageDigest messageDigest = MessageDigest.getInstance("MD5");
+            Key key = new SecretKeySpec(messageDigest.digest(pass.getBytes("UTF-8")), "AES");
+            Cipher cipher = Cipher.getInstance("AES");
+            cipher.init(DECRYPT_MODE, key);
+
+            byte[] decoded = Base64.getDecoder().decode(text.getBytes("UTF-8"));
+            byte[] decrypted = cipher.doFinal(decoded);
+            return new String(decrypted, "UTF-8");
+
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | UnsupportedEncodingException e) {
+            throw new RuntimeException("Cannot decrypt", e);
+        }
+    }
+
+    
+    
 }

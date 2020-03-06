@@ -8,20 +8,6 @@ import java.net.SocketAddress;
 public class Syncer implements IpCheckerInterface {
 	public static void main( String str[] ) {
 		//Cl5500 waga=new Cl5500("172.16.123.247");
-		IpChecker wagi=new IpChecker( "10.0.10.100",new IpCheckerInterface(){
-
-			@Override
-			public boolean check(String ip) {
-				Cl5500 waga=new Cl5500(ip);
-				try {
-					waga.getDate();
-					return true;
-				} catch (IOException e) {
-					return false;
-				}
-			};			
-		});
-		
 		
 		//TODO   bardzo wazne
 		//  wagi=null;
@@ -58,7 +44,7 @@ public class Syncer implements IpCheckerInterface {
 		*/
 			/**/
 			//String txt=waga.wezSklad(82, 0);
-			item = waga1.getPlu(799);
+			//item = waga1.getPlu(799);
 			
 			for ( Item i :mag.getItems() ) {
 				System.out.println(i);

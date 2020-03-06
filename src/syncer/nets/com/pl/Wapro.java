@@ -9,12 +9,20 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.microsoft.sqlserver.jdbc.SQLServerException;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
 public class Wapro {
 	public Connection connObj;
 	
 	private String baza="", host="", user="", pass="";
 	private int idKategoriiMag=0;
 	private List<Item> listaTowarow;
+	private boolean connected=false;
 	
 	public Wapro( String host, String user, String pass, String baza ) {
 		this.host=host;
@@ -25,19 +33,69 @@ public class Wapro {
 		listaTowarow=new ArrayList();
 		getTowaryKategorii();
 	}
-  
-    public void getDbConnection() {
+	
+	
+	
+	public Wapro( String host, String user, String pass ) {
+		this.host=host;
+		this.user=user;
+		this.pass=pass;
+		//this.baza=baza;
+		getDbConnection();
+		//listaTowarow=new ArrayList();
+		//getTowaryKategorii();
+	}
+	
+	public List<String> getDatabasesList(){
+		String sql="SELECT name FROM master.sys.databases";
+		List<String> bazy=new ArrayList<String>();
+		List<String> bazy1=new ArrayList<String>();
+		try {
+			if ( connObj==null ) return bazy;
+			Statement stmt = connObj.createStatement();
+			ResultSet rs = stmt.executeQuery(sql);
+			while (rs.next()) {
+				bazy1.add(rs.getString("name"));
+			}
+			rs.close();
+			
+			for ( String baza: bazy1 ){
+				rs = stmt.executeQuery("SELECT * FROM " + baza +".INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE 'WFM%' " );
+				if ( rs.next() ){
+		        	rs.close();
+		        	rs=stmt.executeQuery("SELECT NAZWA,ID_MAGAZYNU FROM " + baza +".DBO.MAGAZYN" );
+		        	while( rs.next() )
+		        		bazy.add(baza + " [" + rs.getString("NAZWA").trim() +"/"+rs.getString("ID_MAGAZYNU").trim()+ "]");
+		        }
+	        };
+	        rs.close();stmt.close();
+		}catch (Exception e) {
+			if ( e instanceof SQLServerException ) return bazy;
+			e.printStackTrace();
+			return bazy;
+		}
+		return bazy;
+	}
+	
+
+
+	public void getDbConnection() {
         try {
             Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
             connObj = DriverManager.getConnection("jdbc:sqlserver://" + host + ":1433;databaseName="+ baza +";user="+ user +";password="+ pass);
             if(connObj != null) {
                 DatabaseMetaData metaObj = (DatabaseMetaData) connObj.getMetaData();
+                connected=true;
                 //System.out.println("Driver Name?= " + metaObj.getDriverName() + ", Driver Version?= " + metaObj.getDriverVersion() + ", Product Name?= " + metaObj.getDatabaseProductName() + ", Product Version?= " + metaObj.getDatabaseProductVersion());
             }
         } catch(Exception sqlException) {
-            sqlException.printStackTrace();
+            //sqlException.printStackTrace();
         }
     }
+	
+	boolean connected(){
+		return connected;
+	}
     
     void getTowaryKategorii() {
     	String sql="select a.*, c.CENA_BRUTTO as cena from ARTYKUL a left join CENA_ARTYKULU c on c.ID_ARTYKULU=a.ID_ARTYKULU where ID_KATEGORII=7 and id_ceny=1";
@@ -45,14 +103,11 @@ public class Wapro {
 			Statement stmt = connObj.createStatement();
 			ResultSet rs = stmt.executeQuery(sql);
 			while (rs.next()) {
-	            //System.out.println(rs.getString("Nazwa") + " : " + rs.getString("Plu")+ " : " + rs.getString("Cena"));
-	            //public Item(String nazwa, int kodZwiazany, int plu, int cena, String sklad) {
 	            Item item=new Item(rs.getString("Nazwa"),rs.getInt("id_artykulu"),rs.getInt("Plu"), (int)rs.getDouble("Cena")*100, rs.getString("Uwagi"));
 	            listaTowarow.add(item);
 			}
 			
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
     	
@@ -61,4 +116,5 @@ public class Wapro {
     List <Item> getItems() {
 		return listaTowarow;	
     }
+    
 }

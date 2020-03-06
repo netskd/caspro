@@ -209,7 +209,7 @@ public class Cl5500 {
 		ByteArrayOutputStream bs=new ByteArrayOutputStream();
 		byte byt;
 		try {
-			 socket.setSoTimeout(2500);
+			 socket.setSoTimeout(1000);
 			 while ((byt=(byte) socket.getInputStream().read()) !=':'){
 				 bs.write(byt);
 			 }
