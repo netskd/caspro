@@ -149,7 +149,7 @@ public class konfiguracja extends JFrame {
 		szukajSql.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				IpChecker sqle=new IpChecker( "10.0.10.0", new IpCheckerInterface(){
+				IpChecker sqle=new IpChecker( "10.0.10.100", new IpCheckerInterface(){
 
 					@Override
 					public boolean check(String ip) {
@@ -299,7 +299,7 @@ public class konfiguracja extends JFrame {
 			 	if ( m!=null && m.length()>0 ) l.add(m.trim());
 			break;
 		case 0: //automatycznie
-			IpChecker wagi=new IpChecker( "10.0.10.100",new IpCheckerInterface(){
+			IpChecker wagi=new IpChecker( "10.0.10.100", new IpCheckerInterface(){
 
 				@Override
 				public boolean check(String ip) {
@@ -345,10 +345,9 @@ public class konfiguracja extends JFrame {
 
 	public konfiguracja(){
 		listaWag=new ArrayList<Object>();
-		tworzPodklad();
+		tworzPodklad();	
+		setResizable(false);
 		readXML();
-		pack();
-		//setResizable(false);
 	}
 
 	public boolean readXML(){
@@ -360,11 +359,12 @@ public class konfiguracja extends JFrame {
 					
 			//optional, but recommended
 			//read this - http://stackoverflow.com/questions/13786607/normalization-in-dom-parsing-with-java-how-does-it-work
+			
 			doc.getDocumentElement().normalize();
 			NodeList nList = doc.getElementsByTagName("wf-mag");
 			Node nNode = nList.item(0);
 			Element eElement = (Element) nNode;
-			String kombo=decrypt(eElement.getElementsByTagName("serwer").item(0).getTextContent(),"jajcarze");
+			String kombo=decryptSimple(eElement.getElementsByTagName("serwer").item(0).getTextContent(),"jajcarze");
 			int pierwszyN=kombo.indexOf('\n');
 			int drugiN=kombo.indexOf('\n',pierwszyN+1);
 			String server=kombo.substring(0,pierwszyN);serwer.setText(server.trim());
@@ -413,7 +413,7 @@ public class konfiguracja extends JFrame {
 	         root.appendChild(wapro);
 	         Element server = document.createElement("serwer");
 	         String kombo=serwer.getText()+"\n"+login.getText()+"\n"+new String(password.getPassword());
-	         server.appendChild(document.createTextNode(encrypt(kombo,"jajcarze")));
+	         server.appendChild(document.createTextNode(encryptSimple(kombo,"jajcarze")));
 	         wapro.appendChild(server);
 	         Element baza = document.createElement("baza");baza.appendChild(document.createTextNode(db.getSelectedItem().toString()));
 	         wapro.appendChild(baza);
@@ -477,6 +477,33 @@ public class konfiguracja extends JFrame {
         }
     }
 
-    
+    public static String encryptSimple(String text, String pass) {
+        try {
+           
+
+            byte[] encrypted = text.getBytes();
+            for ( int i=0; i< encrypted.length; i++ )
+            	encrypted[i]=(byte) (encrypted[i]+i);
+            byte[] encoded = Base64.getEncoder().encode(encrypted);
+            return new String(encoded, "UTF-8");
+
+        } catch ( UnsupportedEncodingException e ) {
+            throw new RuntimeException("Cannot encrypt", e);
+        }
+    }
+
+    public static String decryptSimple(String text, String pass) {
+        try {
+          
+            byte[] decoded = Base64.getDecoder().decode(text.getBytes("UTF-8"));
+          
+            for ( int i=0; i< decoded.length; i++ )
+                decoded[i]=(byte) (decoded[i]-i);
+            return new String(decoded, "UTF-8");
+
+        } catch ( UnsupportedEncodingException e ) {
+            throw new RuntimeException("Cannot decrypt", e);
+        }
+    }
     
 }
