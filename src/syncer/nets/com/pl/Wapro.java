@@ -19,16 +19,17 @@ import org.w3c.dom.Element;
 public class Wapro {
 	public Connection connObj;
 	
-	private String baza="", host="", user="", pass="";
+	private String baza="", host="", user="", pass="", magazyn="";
 	private int idKategoriiMag=0;
 	private List<Item> listaTowarow;
 	private boolean connected=false;
 	
-	public Wapro( String host, String user, String pass, String baza ) {
+	public Wapro( String host, String user, String pass, String baza, String magazyn ) {
 		this.host=host;
 		this.user=user;
 		this.pass=pass;
 		this.baza=baza;
+		this.magazyn=magazyn;
 		getDbConnection();
 		listaTowarow=new ArrayList();
 		getTowaryKategorii();
@@ -98,7 +99,7 @@ public class Wapro {
 	}
     
     void getTowaryKategorii() {
-    	String sql="select a.*, c.CENA_BRUTTO as cena from ARTYKUL a left join CENA_ARTYKULU c on c.ID_ARTYKULU=a.ID_ARTYKULU where ID_KATEGORII=7 and id_ceny=1";
+    	String sql="select a.*, c.CENA_BRUTTO as cena from ARTYKUL a left join CENA_ARTYKULU c on c.ID_ARTYKULU=a.ID_ARTYKULU where a.plu>0 and a.id_magazynu=" + this.magazyn + " and id_ceny=1";
     	try {
 			Statement stmt = connObj.createStatement();
 			ResultSet rs = stmt.executeQuery(sql);

@@ -80,6 +80,7 @@ public class konfiguracja extends JFrame {
 	private List<?> listaWag;
 	JList<String> wagi=new JList<String>();
 	DefaultListModel<String> wagiLista=new DefaultListModel<String>();
+	private String serwerTxt="", loginTxt="", passTxt="", dbTxt="";
 	
 	private JTabbedPane tabbedPane;
 	
@@ -133,6 +134,18 @@ public class konfiguracja extends JFrame {
 
 		baza.add(tabbedPane,BorderLayout.CENTER);
 		this.add(baza);
+		
+		
+		// uzupelnienie jezeli są ustawione
+		List<String> combo=new ArrayList<String>();
+		combo.add(dbTxt);
+		DefaultComboBoxModel<Object> model = new DefaultComboBoxModel<Object>( combo.toArray() );
+		db.setModel( model );db.setSelectedIndex(0);
+		
+		this.serwer.setText(serwerTxt);
+		this.login.setText(loginTxt);
+		this.password.setText(passTxt);
+		
 		this.pack();
 		Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
 		this.setLocation(dim.width/2-this.getSize().width/2, dim.height/2-this.getSize().height/2);
@@ -149,7 +162,7 @@ public class konfiguracja extends JFrame {
 		szukajSql.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				IpChecker sqle=new IpChecker( "10.0.10.100", new IpCheckerInterface(){
+				IpChecker sqle=new IpChecker( new IpCheckerInterface(){
 
 					@Override
 					public boolean check(String ip) {
@@ -188,7 +201,6 @@ public class konfiguracja extends JFrame {
 				}
 				sqle=null; // garbage IT !!!!!
 			}
-			
 		});
 
 	}
@@ -258,6 +270,7 @@ public class konfiguracja extends JFrame {
 		JPanel p=new JPanel();
 		p.setLayout(new BorderLayout());
 		JPanel lewy=new JPanel(), prawy=new JPanel();
+		
 		JList<String> wagi=new JList<String>(wagiLista);
 		lewy.setLayout(new BorderLayout());
 		
@@ -270,12 +283,12 @@ public class konfiguracja extends JFrame {
 		JButton usun=new JButton("-");
 		prawy.setLayout(new GridLayout(2,1));
 		prawy.add(dodaj);prawy.add(usun);
+		usun.addActionListener(e -> { wagiLista.remove(wagi.getSelectedIndex()); } );
 		
 		wagi.setLayoutOrientation(JList.VERTICAL);
 		JScrollPane listScroller = new JScrollPane(wagi);
 		lewy.add(listScroller,BorderLayout.CENTER);
-		//model.addElement("test");model.addElement("test1");model.addElement("test2");model.addElement("test3");
-		//wagi.setModel(model);
+		
 		return p;
 	}
 	
@@ -286,35 +299,36 @@ public class konfiguracja extends JFrame {
 		}
 	}
 
-	private List pokazWyborDodaniaWag() {
-		List l=new ArrayList();
+	private List<String> pokazWyborDodaniaWag() {
+		List<String> l=new ArrayList<String>();
 		String[] buttons = { "Automat", "Ręcznie", "Anuluj" };    
 		int returnValue = JOptionPane.showOptionDialog(null, "Dodawanie wag\n\nWybierz w jaki sposób dodać wagi.\nJeśli wybierzesz \"Automat\", zostaną dodane wszystkie \nwykryte wagi dostępne w sieci lokalnej...\nJeśli wybierzesz \"Ręcznie\" Będziesz mógł podać adres IP wagi\n\n", "Dodaj",
 		        JOptionPane.INFORMATION_MESSAGE, 0, null, buttons, buttons[0]);
+		
 		switch( returnValue ){
-		case 2: // anuluj
-			break;
-		case 1: // ręcznie
-			 	String m = JOptionPane.showInputDialog(this, "Podaj adres ip wagi","Ręcznie dodaj wagę", JOptionPane.QUESTION_MESSAGE);
-			 	if ( m!=null && m.length()>0 ) l.add(m.trim());
-			break;
-		case 0: //automatycznie
-			IpChecker wagi=new IpChecker( "10.0.10.100", new IpCheckerInterface(){
-
-				@Override
-				public boolean check(String ip) {
-					Cl5500 waga=new Cl5500(ip);
-					try {
-						waga.getDate();
-						return true;
-					} catch (IOException e) {
-						return false;
-					}
-				};			
-			});
-			for ( String waga: wagi.ips )
-				l.add(waga);
-			break;
+			case 2: // anuluj
+				break;
+			case 1: // ręcznie
+				 	String m = JOptionPane.showInputDialog(this, "Podaj adres ip wagi","Ręcznie dodaj wagę", JOptionPane.QUESTION_MESSAGE);
+				 	if ( m!=null && m.length()>0 ) l.add(m.trim());
+				break;
+			case 0: //automatycznie
+					IpChecker wagi=new IpChecker(  new IpCheckerInterface(){
+		
+						@Override
+						public boolean check(String ip) {
+							Cl5500 waga=new Cl5500(ip);
+							try {
+								waga.getDate();
+								return true;
+							} catch (IOException e) {
+								return false;
+							}
+						};			
+					});
+					for ( String waga: wagi.ips )
+						l.add(waga);
+				break;
 		}
 		return l;
 	}
@@ -332,22 +346,19 @@ public class konfiguracja extends JFrame {
 
 			@Override
 			public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
-			
 			}
 
 			@Override
 			public void popupMenuCanceled(PopupMenuEvent e) {
-			
 			}
-			
 		});
 	}
 
 	public konfiguracja(){
 		listaWag=new ArrayList<Object>();
-		tworzPodklad();	
-		setResizable(false);
 		readXML();
+		//tworzPodklad();	
+		setResizable(false);
 	}
 
 	public boolean readXML(){
@@ -356,10 +367,7 @@ public class konfiguracja extends JFrame {
 			DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 			Document doc = dBuilder.parse(fXmlFile);
-					
-			//optional, but recommended
-			//read this - http://stackoverflow.com/questions/13786607/normalization-in-dom-parsing-with-java-how-does-it-work
-			
+
 			doc.getDocumentElement().normalize();
 			NodeList nList = doc.getElementsByTagName("wf-mag");
 			Node nNode = nList.item(0);
@@ -367,26 +375,24 @@ public class konfiguracja extends JFrame {
 			String kombo=decryptSimple(eElement.getElementsByTagName("serwer").item(0).getTextContent(),"jajcarze");
 			int pierwszyN=kombo.indexOf('\n');
 			int drugiN=kombo.indexOf('\n',pierwszyN+1);
-			String server=kombo.substring(0,pierwszyN);serwer.setText(server.trim());
-			String user=kombo.substring(pierwszyN,drugiN);login.setText(user.trim());
-			String haslo=kombo.substring(drugiN);password.setText(haslo.trim());
-			String baza=eElement.getElementsByTagName("baza").item(0).getTextContent();
-			List<String> combo=new ArrayList<String>();
-			combo.add(baza);
-			DefaultComboBoxModel<Object> model = new DefaultComboBoxModel<Object>( combo.toArray() );
-			db.setModel( model );db.setSelectedIndex(0);
+			this.serwerTxt=kombo.substring(0,pierwszyN);
+			//serwer.setText(serwerTxt.trim());
+			this.loginTxt=kombo.substring(pierwszyN+1,drugiN);
+			//login.setText(user.trim());
+			passTxt=kombo.substring(drugiN+1);
+			//password.setText(haslo.trim());
+			dbTxt=eElement.getElementsByTagName("baza").item(0).getTextContent();
+			
 			NodeList listaWag=doc.getElementsByTagName("wagi");
-			System.out.println(listaWag.getLength());
+			
 			wagiLista.clear();
 			NodeList n=((Element)listaWag.item(0)).getElementsByTagName("ip");
-			System.out.println(n.getLength());
+			
 			for ( int i=0 ; i<n.getLength(); i++ )
 			{
-				//String test=listaWag.item(i).getTextContent();
 				wagiLista.addElement(n.item(i).getTextContent());
 			}
 			
-			//System.out.println(decrypt(kombo,"jajcarze"));
 		}catch( Exception ex )
 		{
 			ex.printStackTrace();
@@ -412,7 +418,7 @@ public class konfiguracja extends JFrame {
 	         Element wapro = document.createElement("wf-mag");
 	         root.appendChild(wapro);
 	         Element server = document.createElement("serwer");
-	         String kombo=serwer.getText()+"\n"+login.getText()+"\n"+new String(password.getPassword());
+	         String kombo=serwer.getText().trim()+"\n"+login.getText().trim()+"\n"+new String(password.getPassword());
 	         server.appendChild(document.createTextNode(encryptSimple(kombo,"jajcarze")));
 	         wapro.appendChild(server);
 	         Element baza = document.createElement("baza");baza.appendChild(document.createTextNode(db.getSelectedItem().toString()));
@@ -505,5 +511,31 @@ public class konfiguracja extends JFrame {
             throw new RuntimeException("Cannot decrypt", e);
         }
     }
-    
+
+	public void pokaz() {
+		this.tworzPodklad();
+		setResizable(false);
+		pack();
+		setVisible(true);
+	}
+
+	public String getHost() {
+		return serwerTxt.trim();
+	}
+	
+	public String getUser() {
+		return loginTxt.trim();
+	}
+	
+	public String getPass() {
+		return passTxt.trim();
+	}
+	
+	public String getDb() {
+		return dbTxt.substring(0, dbTxt.indexOf('[')-1).trim();
+	}
+	
+	public String getMag() {
+		return dbTxt.substring(dbTxt.indexOf('/')+1, dbTxt.lastIndexOf(']') ).trim();
+	}
 }

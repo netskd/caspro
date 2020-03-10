@@ -83,7 +83,7 @@ public class Item {
 		bs.write(pomocniczy.getBytes());
 		ByteBuffer bb = ByteBuffer.allocate(2);
         bb.order(ByteOrder.LITTLE_ENDIAN);
-        bb.putShort((short) plu);
+        bb.putShort((short)( jestSklad()?plu:0) );
         bb.flip();
         bs.write(bb.array());
 	}
@@ -117,8 +117,8 @@ public class Item {
 				addPlu2Block(bs1);
 				addTypeBlock(bs1);
 				addNameBlock(bs1);
-				if ( jestSklad() )
-					addIngredientsBlock(bs1);
+				//if ( jestSklad() )
+				addIngredientsBlock(bs1);
 				String bs1Txt=bs1.toString();
 				crc(bs1);
 				bs1Txt=bs1.toString();
@@ -164,10 +164,17 @@ public class Item {
 	}
 
 	public byte[] getDeleteString(){
-		return null;
+		ByteArrayOutputStream bs=new ByteArrayOutputStream();
+		
+		String txt="C<xx>F13,"+String.format("%06x",plu);
+		try {
+			bs.write(txt.getBytes());
+		}catch( Exception ex ) {};
+		return bs.toByteArray();
 	}
 	
 	public boolean jestSklad(){
+		if ( skladTxt==null ) skladTxt="";
 		return skladTxt.length()>0;
 	}
 	public byte[] getIngredientsString( ) throws IOException{
@@ -189,7 +196,7 @@ public class Item {
 		crc(bs1);
 		//bs1Str=bs1.toString();
 		
-		String naglowek= String.format("W30F01,%dL%02x:",plu,bs1.size()-1 ); // przypisujemy do id skladu numer plu towaru...
+		String naglowek= String.format("W30F01,%dL%02x:",jestSklad()?plu:0,bs1.size()-1 ); // przypisujemy do id skladu numer plu towaru...
 		bs.write(naglowek.getBytes());
 		//bs1Str=bs1.toString();
 		bs.write(bs1.toByteArray());

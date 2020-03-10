@@ -18,7 +18,7 @@ public class IpChecker {
 	public IpChecker(IpCheckerInterface listener){
 		String classIpAddr=getIp();
 		addListener(listener);
-		IpCheck(classIpAddr);
+		IpCheck(classIpAddr.substring(0,classIpAddr.lastIndexOf('.')));
 	}
 	
 	public void addListener( IpCheckerInterface obj )
