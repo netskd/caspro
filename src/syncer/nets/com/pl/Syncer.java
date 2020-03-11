@@ -24,7 +24,7 @@ public class Syncer implements IpCheckerInterface {
 		else
 		{
 			okno.trayIt();
-			okno.setUndecorated(true);
+			//okno.setUndecorated(true);
 		}
 		while ( true ){
 			if ( okno.autoWysylanie )
