@@ -1,7 +1,9 @@
 package syncer.nets.com.pl;
 
 
+import java.awt.AWTException;
 import java.awt.BorderLayout;
+import java.awt.CheckboxMenuItem;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -9,7 +11,11 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.MenuItem;
+import java.awt.PopupMenu;
+import java.awt.SystemTray;
 import java.awt.Toolkit;
+import java.awt.TrayIcon;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -23,8 +29,11 @@ import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 import static javax.crypto.Cipher.DECRYPT_MODE;
@@ -50,12 +59,14 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListModel;
 import javax.swing.MutableComboBoxModel;
 import javax.swing.SpringLayout;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
+import javax.swing.text.BadLocationException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.Transformer;
@@ -77,12 +88,21 @@ public class konfiguracja extends JFrame {
 	private JTextField serwer, login;
 	private JPasswordField password;
 	private JComboBox<Object> db;
-	private List<?> listaWag;
 	JList<String> wagi=new JList<String>();
 	DefaultListModel<String> wagiLista=new DefaultListModel<String>();
 	private String serwerTxt="", loginTxt="", passTxt="", dbTxt="";
+	final SystemTray tray = SystemTray.getSystemTray();
+	final static TrayIcon trayIcon = new TrayIcon(Toolkit.getDefaultToolkit().createImage("images/Scale-icon.png"));
+	Syncer sync=null;
+	public boolean autoWysylanie=true;
+    
 	
-	private JTabbedPane tabbedPane;
+	private JTabbedPane tabbedPane=null;
+	private boolean canTray=false;
+	public int pauza=5*60;			// pauza w sekundach
+	private JTextArea logger=new JTextArea(15,40);
+	private sender wysylacz=null;
+	private JScrollPane scroller=null;
 	
 	protected Component makeTextPanel(String text) {
 	    JPanel panel = new JPanel(false);
@@ -107,9 +127,9 @@ public class konfiguracja extends JFrame {
 		panelDolny.setLayout(new FlowLayout( FlowLayout.RIGHT ) );
 		
 		JButton ok=new JButton("Ok");
-		ok.addActionListener( e -> { if (saveXML()) this.dispose(); } );
+		ok.addActionListener( e -> { if (saveXML()) if ( trayIt()  ) this.setVisible(false); } );
 		JButton cancel=new JButton("Anuluj");
-		cancel.addActionListener(e -> { this.dispose(); });
+		cancel.addActionListener(e -> { if ( trayIt()  ) this.setVisible(false);  });
 		panelDolny.add(ok);panelDolny.add(cancel);
 		
 		baza.add(panelDolny,BorderLayout.SOUTH);
@@ -125,9 +145,9 @@ public class konfiguracja extends JFrame {
 		                  "Dodaj/usuń obsługiwane wagi");
 		tabbedPane.setMnemonicAt(1, KeyEvent.VK_2);
 
-		JComponent panel3 = (JComponent) makeTextPanel("Log transmisji");
+		JComponent panel3 = this.getLogPanel();
 		tabbedPane.addTab("Log transmisji", null, panel3,
-		                  "Tu zobaczysz co jest jeszcze do wysłania");
+		                  "Tu zobaczysz logi wysyłania");
 		tabbedPane.setMnemonicAt(2, KeyEvent.VK_3);
 
 		panel1.setPreferredSize(new Dimension(460, 250));
@@ -292,7 +312,50 @@ public class konfiguracja extends JFrame {
 		return p;
 	}
 	
-	private void dodajWagi(List l) {
+	private JPanel getLogPanel(){
+		JPanel p=new JPanel();
+		p.setLayout(new BorderLayout());
+		JPanel gora=new JPanel(), prawy=new JPanel();
+		gora.setLayout(new BorderLayout());
+		JPanel centralny=new JPanel();
+		centralny.setLayout(new BorderLayout());
+		
+		p.add( gora, BorderLayout.NORTH);
+		p.add( centralny, BorderLayout.CENTER);
+		
+		JLabel freqLbl=new JLabel("Częstość ");
+		String[] freqValues = { "1 minuta", "5 minut", "10 minut", "30 minut", "1 godzina" , "6 godzin" };
+		JComboBox<String> freq=new JComboBox<String>(freqValues);
+		freq.setSelectedIndex(1);
+		freq.addActionListener(e->{
+			switch( freq.getSelectedIndex() ){
+				case 0:pauza=1*60;break;
+				case 1:pauza=5*60;break;
+				case 2:pauza=10*60;break;
+				case 3:pauza=30*60;break;
+				case 4:pauza=1*60*60;break;
+				case 5:pauza=6*60*60;break;
+			}
+		});
+		
+		JButton wyslijTeraz=new JButton("Wyślij teraz");
+		wyslijTeraz.addActionListener( e-> { wysylacz.wyslij(); } );
+		gora.add(  freqLbl, BorderLayout.WEST );
+		gora.add( freq , BorderLayout.CENTER );
+		gora.add( wyslijTeraz, BorderLayout.EAST );
+		logger.setEditable(false);
+		scroller= new JScrollPane(logger);
+		scroller.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);  
+	    scroller.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);  
+	  
+		centralny.add(scroller,BorderLayout.CENTER);
+		
+		return p;
+	}
+	
+	
+	
+	private void dodajWagi(List<?> l) {
 		for( Object waga: l )
 		{
 			if ( !wagiLista.contains((String)waga) ) wagiLista.addElement((String) waga); 
@@ -354,11 +417,12 @@ public class konfiguracja extends JFrame {
 		});
 	}
 
-	public konfiguracja(){
-		listaWag=new ArrayList<Object>();
+	public konfiguracja(  ){
+		//sync=s;
 		readXML();
+		canTray();
 		//tworzPodklad();	
-		setResizable(false);
+		//setResizable(false);
 	}
 
 	public boolean readXML(){
@@ -395,7 +459,8 @@ public class konfiguracja extends JFrame {
 			
 		}catch( Exception ex )
 		{
-			ex.printStackTrace();
+			//ex.printStackTrace();
+			System.out.println("Pewnie nie ma pliku" );
 			return false;
 		}
 		return true;
@@ -513,10 +578,13 @@ public class konfiguracja extends JFrame {
     }
 
 	public void pokaz() {
-		this.tworzPodklad();
-		setResizable(false);
-		pack();
+		if ( this.tabbedPane==null ){
+			this.tworzPodklad();
+			setResizable(false);
+			pack();
+		}
 		setVisible(true);
+		tray.remove(trayIcon);
 	}
 
 	public String getHost() {
@@ -532,10 +600,85 @@ public class konfiguracja extends JFrame {
 	}
 	
 	public String getDb() {
+		if ( dbTxt.indexOf('[')<0 ) return"";
 		return dbTxt.substring(0, dbTxt.indexOf('[')-1).trim();
 	}
 	
 	public String getMag() {
+		if ( dbTxt.indexOf('[')<0 ) return"";
 		return dbTxt.substring(dbTxt.indexOf('/')+1, dbTxt.lastIndexOf(']') ).trim();
+	}
+	
+	public boolean canTray(){
+		 if (!SystemTray.isSupported()) {
+	            System.out.println("SystemTray is not supported");
+	            return false;
+	        }
+	        final PopupMenu popup = new PopupMenu();
+	       
+	        // Create a pop-up menu components
+	        MenuItem aboutItem = new MenuItem("About");
+	        CheckboxMenuItem cb1 = new CheckboxMenuItem("Automatycznie przesyłaj");
+	        cb1.setState(autoWysylanie);
+	        cb1.addActionListener(e -> { autoWysylanie=cb1.getState(); } );
+	        MenuItem konfiguracja = new MenuItem("Konfiguracja");
+	        MenuItem exitItem = new MenuItem("Zakończ");
+	        exitItem.addActionListener( e-> { System.exit(0); } );
+	        konfiguracja.addActionListener(e->{pokaz();});
+	        //Add components to pop-up menu
+	        popup.add(aboutItem);
+	        popup.addSeparator();
+	        popup.add(cb1);
+	        //popup.add(cb2);
+	        popup.addSeparator();
+	        popup.add(konfiguracja);
+
+	        popup.add(exitItem);
+	       
+	        trayIcon.setPopupMenu(popup);
+	        canTray=true;
+	        return true;
+	}
+	
+	public boolean trayIt() {
+			if ( !canTray ) return false;
+	        try {
+	            tray.add(trayIcon);
+	        } catch (AWTException e) {
+	            System.out.println("TrayIcon could not be added.");
+	            return false;
+	        }
+	        return true;
+	}
+
+	public void addLog(String str) {
+		SimpleDateFormat formatter= new SimpleDateFormat("yyyy-MM-dd  HH:mm:ss |");
+		Date date = new Date(System.currentTimeMillis());
+		try{
+			if ( logger.getLineCount()>200 ){
+				int end = logger.getLineEndOffset(0);
+				logger.replaceRange("", 0, end);
+			}
+			str = formatter.format(date) + " " + str + "\n";
+			logger.append(str);
+				
+			logger.scrollRectToVisible(logger.modelToView(logger.getDocument().getLength()));
+		} catch (BadLocationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	public List<String> getScalesIps() {
+		return (ArrayList<String>) Collections.list(wagiLista.elements());
+	}
+
+	public void setSender(sender wysylacz) {
+		this.wysylacz=wysylacz;
+	}
+
+	public int getPauza() {
+		//switch( cb1. )
+		return pauza;
 	}
 }

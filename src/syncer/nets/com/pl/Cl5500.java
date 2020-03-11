@@ -20,6 +20,7 @@ public class Cl5500 {
 	String ip;
 	private Socket socket;
 	protected boolean isConnected=false;
+	private String lastError;
 	
 	public static enum pola{
 		plu(1),
@@ -319,14 +320,16 @@ public class Cl5500 {
 	
 	public boolean getRetValue() throws IOException{
 		byte byt;
+		lastError="";
 		ByteArrayOutputStream bs=new ByteArrayOutputStream();
-		while ( /* socket.getInputStream().available()>0  && */ ( byt=(byte) socket.getInputStream().read())!=10 ){
+		while ( ( byt=(byte) socket.getInputStream().read())!=10 ){
 			bs.write(byt);
 		}
 		byt=(byte) socket.getInputStream().read();
 		String s=bs.toString();
-		//System.out.println(s);
+		
 		if ( s.contains(":E") ){
+			lastError="s";
 			System.out.println("Błąd:"+s);
 			return false;
 		}
@@ -360,6 +363,10 @@ public class Cl5500 {
 	
 	public boolean dodajSklad(){
 		return true;
+	}
+
+	public String getLastError() {
+		return lastError;
 	}
 	
 	

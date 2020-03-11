@@ -18,7 +18,7 @@ import org.w3c.dom.Element;
 
 public class Wapro {
 	public Connection connObj;
-	
+	private String log="";
 	private String baza="", host="", user="", pass="", magazyn="";
 	private int idKategoriiMag=0;
 	private List<Item> listaTowarow;
@@ -32,7 +32,7 @@ public class Wapro {
 		this.magazyn=magazyn;
 		getDbConnection();
 		listaTowarow=new ArrayList();
-		getTowaryKategorii();
+		//getTowaryKategorii();
 	}
 	
 	
@@ -99,6 +99,8 @@ public class Wapro {
 	}
     
     void getTowaryKategorii() {
+    	listaTowarow.clear();
+    	log="";
     	String sql="select a.*, c.CENA_BRUTTO as cena from ARTYKUL a left join CENA_ARTYKULU c on c.ID_ARTYKULU=a.ID_ARTYKULU where a.plu>0 and a.id_magazynu=" + this.magazyn + " and id_ceny=1";
     	try {
 			Statement stmt = connObj.createStatement();
@@ -108,13 +110,19 @@ public class Wapro {
 	            listaTowarow.add(item);
 			}
 			
-		} catch (SQLException e) {
-			e.printStackTrace();
+		} catch (Exception e) {
+			log=e.getLocalizedMessage();
+			//e.printStackTrace();
 		}
     	
     }
     
+    public String getLog(){
+    	return log;
+    }
+    
     List <Item> getItems() {
+    	getTowaryKategorii();
 		return listaTowarow;	
     }
     
