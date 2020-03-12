@@ -83,6 +83,7 @@ public class Wapro {
 	public void getDbConnection() {
         try {
             Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+            DriverManager.setLoginTimeout(1);
             connObj = DriverManager.getConnection("jdbc:sqlserver://" + host + ":1433;databaseName="+ baza +";user="+ user +";password="+ pass);
             if(connObj != null) {
                 DatabaseMetaData metaObj = (DatabaseMetaData) connObj.getMetaData();
@@ -91,6 +92,7 @@ public class Wapro {
             }
         } catch(Exception sqlException) {
             //sqlException.printStackTrace();
+        	connected=false;
         }
     }
 	
@@ -99,6 +101,9 @@ public class Wapro {
 	}
     
     void getTowaryKategorii() {
+    	if ( !connected ){
+    		getDbConnection();
+    	}
     	listaTowarow.clear();
     	log="";
     	String sql="select a.*, c.CENA_BRUTTO as cena from ARTYKUL a left join CENA_ARTYKULU c on c.ID_ARTYKULU=a.ID_ARTYKULU where a.plu>0 and a.id_magazynu=" + this.magazyn + " and id_ceny=1";

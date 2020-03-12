@@ -17,9 +17,11 @@ public class sender {
 		List<Item> listaTowarow=null;
 		listaTowarow=mag.getItems();
 		if ( listaTowarow.size()==0 ){
+			if (mag==null || !mag.connected() ){
+				okno.addLog("Brak połączenia z wf-mag"); return;
+			}
 			if (  mag.getLog().length()>0 )
 			{
-				
 				okno.addLog(mag.getLog());
 			}else
 			{

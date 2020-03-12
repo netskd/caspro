@@ -130,7 +130,9 @@ public class konfiguracja extends JFrame {
 		ok.addActionListener( e -> { if (saveXML()) if ( trayIt()  ) this.setVisible(false); } );
 		JButton cancel=new JButton("Anuluj");
 		cancel.addActionListener(e -> { if ( trayIt()  ) this.setVisible(false);  });
-		panelDolny.add(ok);panelDolny.add(cancel);
+		JButton zamknij=new JButton("Wyjdź");
+		zamknij.addActionListener(e -> { System.exit(0);  });
+		panelDolny.add(ok);panelDolny.add(cancel);panelDolny.add(zamknij);
 		
 		baza.add(panelDolny,BorderLayout.SOUTH);
 		
