@@ -10,6 +10,7 @@ import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
+import java.awt.Image;
 import java.awt.Insets;
 import java.awt.MenuItem;
 import java.awt.PopupMenu;
@@ -92,7 +93,8 @@ public class konfiguracja extends JFrame {
 	DefaultListModel<String> wagiLista=new DefaultListModel<String>();
 	private String serwerTxt="", loginTxt="", passTxt="", dbTxt="";
 	final SystemTray tray = SystemTray.getSystemTray();
-	final static TrayIcon trayIcon = new TrayIcon(Toolkit.getDefaultToolkit().createImage( konfiguracja.class.getResource("/Scale-icon.png")));
+	final private static Image img=Toolkit.getDefaultToolkit().createImage( konfiguracja.class.getResource("/waga.png"));
+	final static TrayIcon trayIcon = new TrayIcon(img);
 	Syncer sync=null;
 	public boolean autoWysylanie=true;
     
@@ -421,6 +423,8 @@ public class konfiguracja extends JFrame {
 
 	public konfiguracja(  ){
 		//sync=s;
+		System.out.println( img );
+		setIconImage(img);
 		readXML();
 		canTray();
 		//tworzPodklad();	
@@ -645,7 +649,7 @@ public class konfiguracja extends JFrame {
 	public boolean trayIt() {
 			if ( !canTray ) return false;
 	        try {
-	            tray.add(trayIcon);
+	        	SystemTray.getSystemTray().add(trayIcon);
 	        } catch (AWTException e) {
 	            System.out.println("TrayIcon could not be added.");
 	            return false;
