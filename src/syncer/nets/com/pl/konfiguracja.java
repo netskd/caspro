@@ -424,9 +424,11 @@ public class konfiguracja extends JFrame {
 	public konfiguracja(  ){
 		//sync=s;
 		System.out.println( img );
+		trayIcon.setImageAutoSize(true);
+		//trayIcon.displayMessage("Uwaga",  "111", TrayIcon.MessageType.NONE);
 		setIconImage(img);
 		readXML();
-		canTray();
+		canTray(); 
 		//tworzPodklad();	
 		//setResizable(false);
 	}
