@@ -92,7 +92,7 @@ public class konfiguracja extends JFrame {
 	DefaultListModel<String> wagiLista=new DefaultListModel<String>();
 	private String serwerTxt="", loginTxt="", passTxt="", dbTxt="";
 	final SystemTray tray = SystemTray.getSystemTray();
-	final static TrayIcon trayIcon = new TrayIcon(Toolkit.getDefaultToolkit().createImage("images/Scale-icon.png"));
+	final static TrayIcon trayIcon = new TrayIcon(Toolkit.getDefaultToolkit().createImage( konfiguracja.class.getResource("/Scale-icon.png")));
 	Syncer sync=null;
 	public boolean autoWysylanie=true;
     
