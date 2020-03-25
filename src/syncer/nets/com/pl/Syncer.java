@@ -11,9 +11,9 @@ public class Syncer implements IpCheckerInterface {
 	private static konfiguracja okno;
 	
 	public static void main( String str[] ) {
-		
+		System.out.println("asdasd");
 		okno= new konfiguracja( );
-		
+		System.out.println("asdasd");
 		//Cl5500 waga1=new Cl5500("10.0.10.65");
 		
 		mag=new Wapro( okno.getHost(), okno.getUser(), okno.getPass(), okno.getDb(), okno.getMag() );

@@ -101,15 +101,24 @@ public class Wapro {
 	}
     
     void getTowaryKategorii() {
+    	String sql="select a.*, c.CENA_BRUTTO as cena from ARTYKUL a left join CENA_ARTYKULU c on c.ID_ARTYKULU=a.ID_ARTYKULU left join cena cc on cc.id_ceny=c.id_ceny  where cc.nazwa like 'detal%' and a.plu>0 and a.id_magazynu=" + this.magazyn /*+ " and id_ceny=1"*/;
+    	System.out.println(sql);
     	if ( !connected ){
     		getDbConnection();
     	}
     	listaTowarow.clear();
+    	//System.out.println("test1");
     	log="";
-    	String sql="select a.*, c.CENA_BRUTTO as cena from ARTYKUL a left join CENA_ARTYKULU c on c.ID_ARTYKULU=a.ID_ARTYKULU where a.plu>0 and a.id_magazynu=" + this.magazyn + " and id_ceny=1";
+    	//String sql="select a.*, c.CENA_BRUTTO as cena from ARTYKUL a left join CENA_ARTYKULU c on c.ID_ARTYKULU=a.ID_ARTYKULU where a.plu>0 and a.id_magazynu=" + this.magazyn + " and id_ceny=1";
+    	//System.out.println(sql);
     	try {
+    		//System.out.println("W try " );
 			Statement stmt = connObj.createStatement();
+			//System.out.println("W try execute" );
 			ResultSet rs = stmt.executeQuery(sql);
+			//rs.last();
+			System.out.println( "Ilosc:" + rs.getRow());
+			//rs.first();
 			while (rs.next()) {
 	            Item item=new Item(rs.getString("Nazwa"),rs.getInt("id_artykulu"),rs.getInt("Plu"), (int)rs.getDouble("Cena")*100, rs.getString("Uwagi"));
 	            listaTowarow.add(item);
@@ -117,7 +126,7 @@ public class Wapro {
 			
 		} catch (Exception e) {
 			log=e.getLocalizedMessage();
-			//e.printStackTrace();
+			e.printStackTrace();
 		}
     	
     }
