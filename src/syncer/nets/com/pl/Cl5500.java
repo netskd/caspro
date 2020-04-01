@@ -353,9 +353,11 @@ public class Cl5500 {
 	public boolean addPlu( Item i ) throws IOException, InterruptedException
 	{
 		boolean ret=write(i.getAddString());
+		System.out.println("Dodaje plu:" + i.getPlu() + "\n" + new String(i.getAddString()) );
 		if ( i.jestSklad() ){
 			byte[] addTxt=i.getIngredientsString();
 			String txt=addTxt.toString();
+			System.out.println("\tDodaje sklad:" + new String(i.getIngredientsString()) );
 			ret=write(addTxt);
 		}
 		return ret;

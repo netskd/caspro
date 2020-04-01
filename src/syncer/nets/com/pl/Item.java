@@ -196,7 +196,7 @@ public class Item {
 		crc(bs1);
 		//bs1Str=bs1.toString();
 		
-		String naglowek= String.format("W30F01,%dL%02x:",jestSklad()?plu:0,bs1.size()-1 ); // przypisujemy do id skladu numer plu towaru...
+		String naglowek= String.format("W30F01,%xL%02x:",jestSklad()?plu:0,bs1.size()-1 ); // przypisujemy do id skladu numer plu towaru...
 		bs.write(naglowek.getBytes());
 		//bs1Str=bs1.toString();
 		bs.write(bs1.toByteArray());

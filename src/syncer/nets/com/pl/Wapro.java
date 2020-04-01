@@ -122,6 +122,7 @@ public class Wapro {
 			while (rs.next()) {
 	            Item item=new Item(rs.getString("Nazwa"),rs.getInt("id_artykulu"),rs.getInt("Plu"), (int)rs.getDouble("Cena")*100, rs.getString("Uwagi"));
 	            listaTowarow.add(item);
+	            System.out.println("Z maga plu:"+rs.getInt("Plu")+"\t|nazwa:"+rs.getString("Nazwa")+"\t|+uwagi:"+rs.getString("Uwagi"));
 			}
 			
 		} catch (Exception e) {
